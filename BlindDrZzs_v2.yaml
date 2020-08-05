@@ -1,0 +1,182 @@
+# souce: https://gist.github.com/Snipercaine/c951d738d0d984a2e9c5b1f106a9c782
+# apart from removing code which is commented out in the original no change whatsoever
+
+esphome:
+  name: blinds
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi
+  password: !secret wifi_pw
+
+debug: 
+# Enable logging
+logger:
+  level: debug
+
+# Enable Home Assistant API
+api:
+  services:
+    - service: control_servo
+      variables:
+        level: float
+      then:
+        - servo.write:
+            id: blinds_tilt
+            level: !lambda 'return level / 100.0;'
+ota:
+
+output:
+  - platform: gpio
+    id: 'blinds_1'
+    pin: D1
+  - platform: gpio
+    id: 'blinds_2'
+    pin: D2
+  - platform: gpio
+    id: 'tilt_3'
+    pin: D7
+  - platform: gpio
+    id: 'tilt_4'
+    pin: D8
+  - platform: esp8266_pwm
+    id: 'blinds_t'
+    pin: D0
+    frequency: 50 Hz
+
+switch:
+  - platform: output
+    name: "blinds1"
+    output: 'blinds_1'
+    id: blinds1
+  - platform: output
+    name: "blinds2"
+    output: 'blinds_2'
+    id: blinds2
+  - platform: output
+    name: "tilt3"
+    output: 'tilt_3'
+    id: tilt3
+  - platform: output
+    name: "tilt4"
+    output: 'tilt_4'
+    id: tilt4
+
+servo:
+  - output: 'blinds_t'
+    id: blinds_tilt
+    
+binary_sensor:
+  - platform: gpio
+    pin: D5
+    name: "Blinds Top End Stop"
+    filters:
+      invert:
+    on_press:
+      then:
+        - switch.turn_off: blinds1
+        - switch.turn_off: blinds2
+    id: blinds_end_stop
+
+  - platform: gpio
+    pin: D3
+    name: "blinds Button"
+    filters:
+      invert:
+    on_multi_click:
+    - timing:
+        - ON for at most 0.5s
+        - OFF for at most 0.5s
+        - ON for at most 0.5s
+        - OFF for at least 0.5s
+      then:
+        - lambda: |
+            if (id(blinds_tilt_control).state == cover::COVER_OPEN) {
+                id(blinds_tilt_control).close();
+            } else {
+                id(blinds_tilt_control).open();
+              }
+    - timing:
+        - ON for 1s to 3s
+        - OFF for at least 1s
+      then:
+        - lambda: |
+            if (id(blinds_open).state == cover::COVER_OPEN) {
+              if (id(blinds1).state){
+                // shade is opening
+                id(blinds_open).stop();
+              } else {
+                // shade is open and not moving
+                id(blinds_open).close();
+              }
+            } else {
+              if (id(blinds2).state){
+                // shade is closing
+                id(blinds_open).stop();
+              } else {
+                // shade is closed and not moving
+                id(blinds_open).open();
+              }
+            }
+  
+cover:
+  - platform: template
+    name: "Blinds Full"
+    id: blinds_open
+    optimistic: true
+    open_action:
+      - switch.turn_off: blinds2
+      - switch.turn_on: blinds1
+  ## customize this time delay based on how long it takes your blinds to fully lift
+      - delay: 155s
+      - switch.turn_off: blinds1
+    close_action:
+      - switch.turn_off: blinds1
+      - switch.turn_on: blinds2
+ ## customize this time delay based on how long it takes your blinds to fully descend
+      - delay: 122s
+      - switch.turn_off: blinds2
+    stop_action:
+      - switch.turn_off: blinds1
+      - switch.turn_off: blinds2
+  
+  - platform: template
+    name: "Blinds Control"
+    id: blinds_open_control
+    assumed_state: true
+    open_action:
+      - switch.turn_off: blinds2
+      - switch.turn_on: blinds1
+    close_action:
+      - switch.turn_off: blinds1
+      - switch.turn_on: blinds2
+    stop_action:
+      - switch.turn_off: blinds1
+      - switch.turn_off: blinds2
+
+  - platform: template
+    name: "Blinds Tilt"
+    id: blinds_tilt_control
+    optimistic: true
+    open_action:
+      - switch.turn_off: tilt4
+      - switch.turn_on: tilt3
+      - delay: 500ms
+      - servo.write:
+          id: blinds_tilt
+          level: -100.0%
+      - delay: 5s
+      - switch.turn_off: tilt3
+    close_action:
+      - switch.turn_off: tilt4
+      - switch.turn_on: tilt3
+      - delay: 500ms
+      - servo.write:
+          id: blinds_tilt
+          level: 100.0%
+      - delay: 5s
+      - switch.turn_off: tilt3
+    stop_action:
+      - switch.turn_off: tilt3
+      - switch.turn_off: tilt4
