@@ -1,0 +1,11 @@
+DroneWorkshop - IR remote and Servo - https://www.youtube.com/watch?v=8E3ltjnbV0c
+
+Robojax
+ - Article: Controlling 32 Servo motors with PCA9685 and ESP32 - V4 --- https://robojax.com/learn/arduino/?vid=robojax_PCA6895_ESP32_32Servo
+   - V1 PAC6985 16 Servo Control and how to Calibrating Servo Motors: https://robojax.com/learn/arduino/?vid=robojax-PCA6985
+   - video: https://www.youtube.com/watch?v=JFdXB8Za5Os
+   - source code: see https://robojax.com/learn/arduino/?vid=robojax_PCA6895_ESP32_32Servo
+   - lib (snapshot from GitHub): https://robojax.com/learn/arduino/robojax-Adafruit-PCA6985-Library.zip
+   - lib (current): https://github.com/adafruit/Adafruit-PWM-Servo-Driver-Library
+   - lib (forked on 20200811_224900): https://github.com/uherting/Adafruit-PWM-Servo-Driver-Library 
+
